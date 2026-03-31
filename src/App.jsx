@@ -128,6 +128,7 @@ const App = () => {
     const [riggingIntensity, setRiggingIntensity] = useState('OFF'); // OFF, LOW, MED, HIGH
     const [juryVotes, setJuryVotes] = useState(null); // { jurorId: finalistId, ... }
     const [selectableChallenges, setSelectableChallenges] = useState([]);
+    const [isRuPaulMode, setIsRuPaulMode] = useState(false);
 
     // Persistent State for Custom Queens
     const [customQueens, setCustomQueens] = useState(() => {
@@ -495,11 +496,20 @@ const selectReturnChallenge = (challenge) => {
             return;
         }
 
+// NEW: Explicitly handle RuPaul Mode finale
+if (isRuPaulMode && remaining.length <= threshold) {
+    setBottomTwo(remaining); // The remaining queens are the finalists
+    setGameState('FINALE_RUPAUL_CHOICE');
+    return; // Exit and go to finale choice
+}
+
+
         if (remaining.length <= threshold) {
             // Finales skip drama
             const finaleName = finaleFormat === 'TOP_4_LSFTC' ? "Grand Finale: LSFTC" : "Grand Finale";
             setChallengeHistory(prev => [...prev, finaleName]);
-            
+
+
             if (finaleFormat === 'TOP_2') {
                 setGameState('FINALE_TOP2_LIPSYNC');
                 setBottomTwo(remaining.slice(0, 2));
@@ -857,19 +867,17 @@ const confirmDrama = () => {
             lsaBase.stats = { ...lsaBase.stats, lip_sync: (lsaBase.stats.lip_sync || 50) + 30, nerve: (lsaBase.stats.nerve || 50) + 20 };
             setLipSyncAssassin(lsaBase);
 
-            setQueens(prev => prev.map(q => {
-                const padded = padTrackRecord(q.trackRecord, currentEpisode);
-                if (q.id === winner.id) return { ...q, wins: q.wins + 1, trackRecord: [...padded, 'WIN'] };
-                if (tops.some(t => t.id === q.id && q.id !== winner.id)) return { ...q, trackRecord: [...padded, 'HIGH'] };
-                if (btm.some(b => b.id === q.id)) return q; 
-                if (!q.eliminated) return { ...q, trackRecord: [...padded, 'SAFE'] };
-                return q;
-            }));
             setGameState('PLACEMENTS_ASSASSIN');
         }
     };
 
     const runLipsync = () => {
+
+if (isRuPaulMode) {
+    setGameState('RUPAUL_DECISION');
+    return;
+}
+
         const [q1, q2] = bottomTwo;
         let s1 = (q1.stats.lip_sync * 0.6) + (q1.stats.nerve * 0.4) + (Math.random() * 30);
         let s2 = (q2.stats.lip_sync * 0.6) + (q2.stats.nerve * 0.4) + (Math.random() * 30);
@@ -932,6 +940,23 @@ const confirmDrama = () => {
         setGameState('LIPSYNC');
     };
 
+const ruPaulEliminates = (sashay) => {
+    const survivor = bottomTwo.find(q => q.id !== sashay.id);
+
+    setSashayedQueen(sashay);
+    setWeeklyWinner(survivor);
+
+    setQueens(prev => prev.map(q => {
+        const padded = padTrackRecord(q.trackRecord, week);
+        if (q.id === survivor.id) return { ...q, trackRecord: [...padded, 'BTM2'] };
+        if (q.id === sashay.id) return { ...q, eliminated: true, trackRecord: [...padded, 'ELIM'] };
+        return q;
+    }));
+
+    setGameState('LIPSYNC'); // Reuse this state to show the result
+};
+
+
     const runLegacyLipsync = () => {
         const [q1, q2] = decisionMaker; // The top 2
         const s1 = (q1.stats.lip_sync * 0.6) + (q1.stats.nerve * 0.4) + (Math.random() * 30);
@@ -964,37 +989,68 @@ const confirmDrama = () => {
         setGameState('FAREWELL');
     };
 
-    const runAssassinLipsync = () => {
-        const q1 = decisionMaker; // Winner
-        const q2 = lipSyncAssassin;
+const runAssassinLipsync = () => {
+    const q1 = decisionMaker; // Winner
+    const q2 = lipSyncAssassin;
+    
+    const s1 = (q1.stats.lip_sync * 0.6) + (q1.stats.nerve * 0.4) + (Math.random() * 30);
+    const s2 = (q2.stats.lip_sync * 0.6) + (q2.stats.nerve * 0.4) + (Math.random() * 30);
+
+    if (s1 > s2) {
+        // Winner wins => they will pick the lipstick
+        setQueens(prev => prev.map(q => {
+            const padded = padTrackRecord(q.trackRecord, week);
+            const tops = weekResults.filter(r => r.queen.id !== weeklyWinner.id).slice(0, 2).map(r => r.queen);
+
+            if (q.id === weeklyWinner.id) return { ...q, wins: q.wins + 1, trackRecord: [...padded, 'WIN'] };
+            if (tops.some(t => t.id === q.id)) return { ...q, trackRecord: [...padded, 'HIGH'] };
+            if (bottomTwo.some(b => b.id === q.id)) return q; // Defer bottom queens until decision
+            if (!q.eliminated) return { ...q, trackRecord: [...padded, 'SAFE'] };
+            return q;
+        }));
+        setGameState('LIPSYNC_DECISION_ASSASSIN_WIN');
+    } else {
+        // Assassin wins => group vote logic
+        const groupPick = bottomTwo[Math.floor(Math.random() * bottomTwo.length)];
+        const sashay = groupPick;
+        setSashayedQueen(sashay);
         
-        const s1 = (q1.stats.lip_sync * 0.6) + (q1.stats.nerve * 0.4) + (Math.random() * 30);
-        const s2 = (q2.stats.lip_sync * 0.6) + (q2.stats.nerve * 0.4) + (Math.random() * 30);
+        setQueens(prev => prev.map(q => {
+            const padded = padTrackRecord(q.trackRecord, week);
+            const tops = weekResults.filter(r => r.queen.id !== weeklyWinner.id).slice(0, 2).map(r => r.queen);
+            const allSpecials = [weeklyWinner, ...tops, ...bottomTwo];
 
-        if (s1 > s2) {
-            // Winner wins => picks lipstick
-            setGameState('LIPSYNC_DECISION_ASSASSIN_WIN');
-        } else {
-            // Assassin wins => group vote logic
-            const groupPick = bottomTwo[Math.floor(Math.random() * bottomTwo.length)];
-            runLegacyDecision(groupPick.id); // Reusing logic!
-        }
-    };
-
-    const runFarewell = () => {
-        if (sashayedQueen && sashayedQueen.id !== 'DOUBLE_SASHAY') {
-            const allies = queens.filter(q => !q.eliminated && getRelKey(q.id, sashayedQueen.id) in relationships && relationships[getRelKey(q.id, sashayedQueen.id)] > 60);
-            if (allies.length > 0) {
-                setQueens(prev => prev.map(q => {
-                    if (allies.some(a => a.id === q.id)) {
-                        return { ...q, stats: { ...q.stats, nerve: Math.max(0, (q.stats.nerve || 50) - 10) } };
-                    }
-                    return q;
-                }));
+            if (q.id === sashay.id) return { ...q, eliminated: true, trackRecord: [...padded, 'ELIM'] };
+            if (bottomTwo.some(b => b.id === q.id && q.id !== sashay.id)) return { ...q, trackRecord: [...padded, 'BTM'] };
+            
+            if (q.id === weeklyWinner.id) return { ...q, wins: q.wins + 1, trackRecord: [...padded, 'WIN'] };
+            if (tops.some(t => t.id === q.id)) return { ...q, trackRecord: [...padded, 'HIGH'] };
+            
+            if (!allSpecials.some(s => s.id === q.id) && !q.eliminated) {
+                return { ...q, trackRecord: [...padded, 'SAFE'] };
             }
-        }
+            return q;
+        }));
+
         setGameState('FAREWELL');
-    };
+    }
+};
+
+const runFarewell = () => {
+    if (sashayedQueen && sashayedQueen.id !== 'DOUBLE_SASHAY') {
+        const allies = queens.filter(q => !q.eliminated && getRelKey(q.id, sashayedQueen.id) in relationships && relationships[getRelKey(q.id, sashayedQueen.id)] > 60);
+        if (allies.length > 0) {
+            setQueens(prev => prev.map(q => {
+                if (allies.some(a => a.id === q.id)) {
+                    return { ...q, stats: { ...q.stats, nerve: Math.max(0, (q.stats.nerve || 50) - 10) } };
+                }
+                return q;
+            }));
+        }
+    }
+    setGameState('FAREWELL');
+};
+
 
     const calculateMissCongeniality = () => {
         const eliminated = queens.filter(q => q.eliminated);
@@ -1176,6 +1232,7 @@ const runJuryVoteAndCrown = () => {
         });
     };
 
+
     const runLsftcFinal = () => {
         const [q1, q2] = lsftcWinners;
         const ppe1 = Number(calculatePPE(q1.trackRecord));
@@ -1237,7 +1294,20 @@ const runJuryVoteAndCrown = () => {
         return b.wins - a.wins;
     }), [queens]);
 
+    const ruPaulCrowns = (winner) => {
+        setQueens(prev => prev.map(q => {
+            if (q.id === winner.id) {
+                return { ...q, trackRecord: [...q.trackRecord, 'WIN'] };
+            }
+            if (bottomTwo.some(f => f.id === q.id) && q.id !== winner.id) {
+                return { ...q, eliminated: true, trackRecord: [...q.trackRecord, 'RUNNER UP'] };
+            }
+            return q;
+        }));
 
+        calculateMissCongeniality();
+        setTimeout(() => setView('winner'), 1500);
+    };
 
     const queensByOriginalSeason = useMemo(() => {
         // Find all unique queens across all archived seasons
@@ -1419,6 +1489,18 @@ const runJuryVoteAndCrown = () => {
                                             <option value="HIGH">Rigging: HIGH 👑</option>
                                         </select>
                                     </div>
+
+                                    <div className="flex flex-col items-center gap-1 group relative">
+                                        <label className="text-[9px] font-black text-blue-400 uppercase tracking-tighter">RuPaul Mode</label>
+                                        <button
+                                            onClick={() => setIsRuPaulMode(!isRuPaulMode)}
+                                            className={`bg-slate-50 border ${isRuPaulMode ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-500'} text-[10px] rounded-xl px-2 py-1 font-black focus:outline-blue-300 transition-all appearance-none text-center cursor-pointer shadow-sm hover:bg-white`}
+                                        >
+                                            {isRuPaulMode ? 'MODE: ON 👑' : 'MODE: OFF'}
+                                        </button>
+                                    </div>
+
+
                                     <div className="flex items-center gap-2">
                                         <button onClick={() => createCast(10)} className="bg-pink-100 text-pink-600 px-4 py-2 rounded-xl font-bold hover:bg-pink-200 transition-colors flex items-center gap-2 text-sm shadow-sm">
                                             <RefreshCw size={16} /> Random 10
@@ -2119,25 +2201,47 @@ const runJuryVoteAndCrown = () => {
                                         </div>
                                     )}
 
-                                    {gameState === 'CRITIQUES' && weekResults && (
-                                        <div className="text-center p-8 animate-in slide-in-from-bottom-8 duration-500">
-                                            <div className="text-6xl mb-6">👀</div>
-                                            <h3 className="text-2xl font-black text-slate-800 mb-6">Judges' Critiques</h3>
-                                            <div className="bg-sky-50 p-6 rounded-2xl border border-sky-100 mb-6">
-                                                <p className="font-bold text-sky-800 mb-2">SAFE QUEENS</p>
-                                                <p className="text-sky-600 font-medium leading-relaxed">
-                                                    {weekResults.length > 5 ? weekResults.slice(3, -2).map(r => r.queen.name).join(', ') : 'No one'}
-                                                </p>
-                                                <p className="text-sm mt-2 text-sky-500 italic">You are safe to slay another day.</p>
-                                            </div>
-                                            <p className="text-slate-600 font-bold mb-4">The tops and bottoms of the week are:</p>
-                                            <div className="flex flex-wrap justify-center gap-2">
-                                                {[...weekResults.slice(0, 3), ...weekResults.slice(-2)].map(r => (
-                                                    <span key={r.queen.id} className="bg-white border border-slate-200 px-4 py-2 rounded-full text-sm font-bold shadow-sm">{r.queen.name}</span>
-                                                ))}
-                                            </div>
+                            {gameState === 'CRITIQUES' && weekResults && (() => {
+                                const numQueens = weekResults.length;
+                                let tops, bottoms, safes;
+
+                                if (numQueens <= 4) {
+                                    // With 4 or fewer, everyone is judged
+                                    tops = weekResults.slice(0, 2);
+                                    bottoms = weekResults.slice(-2);
+                                    safes = [];
+                                } else if (numQueens === 5) {
+                                    // With 5, two top, one safe, two bottom
+                                    tops = weekResults.slice(0, 2);
+                                    safes = weekResults.slice(2, 3);
+                                    bottoms = weekResults.slice(-2);
+                                } else {
+                                    // Original logic for 6 or more queens
+                                    tops = weekResults.slice(0, 3);
+                                    bottoms = weekResults.slice(-2);
+                                    safes = weekResults.slice(3, -2);
+                                }
+
+                                return (
+                                    <div className="text-center p-8 animate-in slide-in-from-bottom-8 duration-500">
+                                        <div className="text-6xl mb-6">👀</div>
+                                        <h3 className="text-2xl font-black text-slate-800 mb-6">Judges' Critiques</h3>
+                                        <div className="bg-sky-50 p-6 rounded-2xl border border-sky-100 mb-6">
+                                            <p className="font-bold text-sky-800 mb-2">SAFE QUEENS</p>
+                                            <p className="text-sky-600 font-medium leading-relaxed">
+                                                {safes.length > 0 ? safes.map(r => r.queen.name).join(', ') : 'No one'}
+                                            </p>
+                                            <p className="text-sm mt-2 text-sky-500 italic">You are safe to slay another day.</p>
                                         </div>
-                                    )}
+                                        <p className="text-slate-600 font-bold mb-4">The tops and bottoms of the week are:</p>
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                            {[...tops, ...bottoms].map(r => (
+                                                <span key={r.queen.id} className="bg-white border border-slate-200 px-4 py-2 rounded-full text-sm font-bold shadow-sm">{r.queen.name}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                                     {gameState === 'PLACEMENTS' && weeklyWinner && (
                                         <div className="space-y-4 animate-in zoom-in duration-500">
@@ -2312,6 +2416,25 @@ const runJuryVoteAndCrown = () => {
                                     {/* Finales logic preserves the UI block but waits for actions */}
                                     {gameState.startsWith('FINALE') && (
                                         <>
+                                            {gameState === 'FINALE_RUPAUL_CHOICE' && (
+                                                <div className="text-center p-8 animate-in fade-in">
+                                                    <div className="text-6xl mb-6 animate-pulse">👑</div>
+                                                    <h3 className="text-3xl font-black text-yellow-500 mb-4">THE GRAND FINALE!</h3>
+                                                    <p className="text-slate-500 font-medium mb-6">The time has come... to crown our superstar.</p>
+                                                    <div className="flex flex-wrap justify-center gap-4">
+                                                        {bottomTwo.map(q => (
+                                                            <button
+                                                                key={q.id}
+                                                                onClick={() => ruPaulCrowns(q)}
+                                                                className="flex flex-col items-center gap-2 bg-white p-4 rounded-2xl border-2 border-transparent hover:border-yellow-400 hover:bg-yellow-50 transition-all"
+                                                            >
+                                                                <span className="text-5xl">{q.icon}</span>
+                                                                <span className="font-bold text-slate-800">{q.name}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                             {gameState === 'FINALE_JURY_VOTE' && (
                                                 <div className="text-center p-8 animate-in fade-in zoom-in duration-500">
                                                     <div className="text-6xl mb-6">🗳️</div>
@@ -2539,6 +2662,18 @@ const runJuryVoteAndCrown = () => {
                                                 {bottomTwo.map(bq => (
                                                     <button key={bq.id} onClick={() => runLegacyDecision(bq.id)} className="bg-red-500 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-red-600 transition-all">
                                                         {bq.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {gameState === 'RUPAUL_DECISION' && (
+                                        <div className="space-y-3">
+                                            <p className="text-center font-bold text-slate-700">Ru, the time has come to make your decision.</p>
+                                            <div className="flex gap-2 justify-center">
+                                                {bottomTwo.map(bq => (
+                                                    <button key={bq.id} onClick={() => ruPaulEliminates(bq)} className="bg-red-500 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-red-600 transition-all">
+                                                        Eliminate {bq.name}
                                                     </button>
                                                 ))}
                                             </div>

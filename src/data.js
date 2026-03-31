@@ -1,23 +1,66 @@
 export const FIRST_NAMES = [
-  "Cotton", "Candy", "Sugar", "Lulu", "Bubbles", "Petal", "Misty", "Bambi", "Fawn", "Honey", "Dolly", "Pearl", "Gigi", "Pixie", "Trixie", "Lola", "Bunny", "Puff", "Sky", "Blossom",
-  "Glitter", "Cherry", "Peaches", "Angel", "Diamond", "Sapphire", "Ruby", "Stella", "Luna", "Nova", "Venus", "Flora", "Dawn", "Aura", "Serenade", "Echo", "Melody", "Harmony", "Aria", "Siren",
-  "Whisper", "Starlight", "Moonbeam", "Sunshine", "Rainbow", "Crystal", "Lace", "Velvet", "Glow", "Spark", "Twinkle", "Shimmer", "Flash", "Neon", "Plastic", "Glamour", "Beauty", "Glitz", "Dazzle", "Charm",
-  "Rose", "Daisy", "Lily", "Jasmine", "Violet", "Orchid", "Iris", "Ivy", "Willow", "Hazel", "Amber", "Jade", "Coral", "Opal", "Ivory", "Ebony", "Raven", "Scarlet", "Crimson", "Magenta",
-  "Teal", "Azure", "Indigo", "Cyan", "Aqua", "Sapphire", "Platinum", "Goldie", "Silver", "Bronze", "Copper", "Penny", "Dixie", "Roxy", "Moxie", "Lexi", "Maxi", "Bessie", "Daisy", "Minnie",
-  "Kitty", "Kat", "Feline", "Panther", "Tiger", "Lioness", "Bear", "Fox", "Vixen", "Wolf", "Hawk", "Eagle", "Dove", "Swan", "Robin", "Wren", "Lark", "Finch", "Sparrow", "Starling",
-  "Coco", "Chanel", "Dior", "Gucci", "Prada", "Versace", "Armani", "Fendi", "Valentino", "Gabbana", "Balenciaga", "Givenchy", "Hermes", "Vuitton", "Kors", "Klein", "Lauren", "Hilfiger", "Madden", "Choo",
-  "Elektra", "Storm", "Rogue", "Mystique", "Jean", "Emma", "Kitty", "Jubilee", "Magik", "Polaris", "Dazzler", "Psylocke", "X23", "Domino", "Cable", "Bishop", "Forge", "Banshee", "Havok", "Cyclops"
-];
+    // --- The Classics & Nature (Originals + New) ---
+    "Cotton", "Candy", "Sugar", "Lulu", "Bubbles", "Petal", "Misty", "Bambi", "Fawn", "Honey", "Dolly", "Pearl", "Gigi", "Pixie", "Trixie", "Lola", "Bunny", "Puff", "Sky", "Blossom",
+    "Glitter", "Cherry", "Peaches", "Angel", "Diamond", "Sapphire", "Ruby", "Stella", "Luna", "Nova", "Venus", "Flora", "Dawn", "Aura", "Serenade", "Echo", "Melody", "Harmony", "Aria", "Siren",
+    "Whisper", "Starlight", "Moonbeam", "Sunshine", "Rainbow", "Crystal", "Lace", "Velvet", "Glow", "Spark", "Twinkle", "Shimmer", "Flash", "Neon", "Plastic", "Glamour", "Beauty", "Glitz", "Dazzle", "Charm",
+    "Rose", "Daisy", "Lily", "Jasmine", "Violet", "Orchid", "Iris", "Ivy", "Willow", "Hazel", "Amber", "Jade", "Coral", "Opal", "Ivory", "Ebony", "Raven", "Scarlet", "Crimson", "Magenta",
+    "Teal", "Azure", "Indigo", "Cyan", "Aqua", "Platinum", "Goldie", "Silver", "Bronze", "Copper", "Penny", "Dixie", "Roxy", "Moxie", "Lexi", "Maxi", "Bessie", "Minnie", "Kitty", "Kat",
+    "Feline", "Panther", "Tiger", "Lioness", "Bear", "Fox", "Vixen", "Wolf", "Hawk", "Eagle", "Dove", "Swan", "Robin", "Wren", "Lark", "Finch", "Sparrow", "Starling",
+  
+    // --- High Fashion & Luxury ---
+    "Coco", "Chanel", "Dior", "Gucci", "Prada", "Versace", "Armani", "Fendi", "Valentino", "Gabbana", "Balenciaga", "Givenchy", "Hermes", "Vuitton", "Kors", "Klein", "Lauren", "Hilfiger", "Madden", "Choo",
+    "Cartier", "Rolex", "Tiffany", "Birkin", "Bentley", "Aston", "Tesla", "Omega", "Celine", "Zimmermann", "Moschino", "Vera", "Wang", "Vivienne", "Westwood", "Galliano", "McQueen", "Saint", "Laurent",
+  
+    // --- Heroines, Villains & Myth ---
+    "Elektra", "Storm", "Rogue", "Mystique", "Jean", "Emma", "Jubilee", "Magik", "Polaris", "Dazzler", "Psylocke", "X23", "Domino", "Cable", "Bishop", "Forge", "Banshee", "Havok", "Cyclops",
+    "Medusa", "Pandora", "Calypso", "Circe", "Juno", "Hera", "Athena", "Artemis", "Aphrodite", "Persephone", "Valkyrie", "Harpy", "Nymph", "Dryad", "Andromeda", "Hecate", "Nyx", "Selene", "Gaia",
+  
+    // --- The Bar & The Kitchen (Spicy/Boozy) ---
+    "Mimosa", "Bellini", "Martini", "Brandy", "Sherry", "Kahlua", "Tequila", "Margarita", "Shiraz", "Merlot", "Syrah", "Chardonnay", "Prosecco", "Champagne", "Absinthe", "Cointreau", "Hennessy",
+    "Cinnamon", "Nutmeg", "Paprika", "Cayenne", "Saffron", "Ginger", "Olive", "Wasabi", "Kimchi", "Chili", "Habanero", "Cupcake", "Macaron", "Truffle", "Ganache", "Fondue", "Brie", "Mocha", "Espresso", "Latte", "Matcha", "Boba",
+  
+    // --- Retro, Kitsch & Camp ---
+    "Midge", "Barb", "Bev", "Fran", "Flo", "Gladys", "Myrna", "Velma", "Thelma", "Enid", "Muriel", "Bernice", "Shirley", "Dot", "Hattie", "Birdie", "Trudy", "Zelda", "Verna", "Agnes",
+    "Maude", "Beatrice", "Phyllis", "Gertie", "Martha", "Mildred", "Ethel", "Esther", "Blanche", "Dorothy", "Rosemarie", "Eunice", "Babs", "Cookie", "Peaches", "Trixie", "Fifi", "ZsaZsa",
+  
+    // --- Abstract, Edgy & Industrial ---
+    "Drama", "Scandal", "Gossip", "Rumor", "Secret", "Enigma", "Paradox", "Fable", "Legend", "Myth", "Icon", "Muse", "Diva", "Star", "Fame", "Fortune", "Luxury", "Opulence", "Excess", "Vanity",
+    "Karma", "Destiny", "Fate", "Verity", "Justice", "Liberty", "Victory", "Zenith", "Solaris", "Aurora", "Tempest", "Monsoon", "Cyclone", "Zephyr", "Cyber", "Glitch", "Voltage", "Nitro", "Chrome", "Silicon",
+    "Riot", "Chaos", "Havoc", "Static", "Friction", "Hazard", "Vandal", "Felony", "Arson", "Fraud", "Ransom", "Blade", "Razor", "Spike", "Diesel", "Turbo", "Vector", "Matrix",
+  
+    // --- Short, Punchy & International ---
+    "Kiki", "Nana", "Yaya", "Bibi", "Jojo", "Momo", "Toto", "Xoxo", "Zuzu", "Vivi", "Lulu", "Coco", "Pip", "Dot", "Kat", "Lux", "Nyx", "Rio", "Zia", "Suki", "Yuki", "Mika", "Sasha", "Pippa"
+  ];
 
 export const LAST_NAMES = [
+  // --- The Nature & Ethereal (Originals + New) ---
   "Cloud", "Sweet", "Dream", "Soft", "Twinkle", "Sparkle", "Bloom", "Plum", "Berry", "Swirl", "Glitter", "Pop", "Willow", "Blue", "Velvet", "Whimsy", "Frost", "Glow", "Breeze", "Marshmallow",
   "Rain", "Snow", "Ice", "Fire", "Flame", "Ash", "Cinder", "Ember", "Spark", "Blaze", "Inferno", "Storm", "Thunder", "Lightning", "Gale", "Wind", "Zephyr", "Mist", "Fog", "Haze",
   "Star", "Moon", "Sun", "Sky", "Heaven", "Paradise", "Eden", "Utopia", "Nirvana", "Valhalla", "Olympus", "Asgard", "Midgard", "Earth", "World", "Universe", "Galaxy", "Cosmos", "Space", "Time",
-  "Love", "Heart", "Soul", "Spirit", "Mind", "Thought", "Memory", "Dream", "Vision", "Illusion", "Mirage", "Phantom", "Ghost", "Specter", "Wraith", "Shadow", "Shade", "Darkness", "Night", "Midnight",
+  "Love", "Heart", "Soul", "Spirit", "Mind", "Thought", "Memory", "Vision", "Illusion", "Mirage", "Phantom", "Ghost", "Specter", "Wraith", "Shadow", "Shade", "Darkness", "Night", "Midnight",
   "Dawn", "Morning", "Day", "Noon", "Afternoon", "Evening", "Dusk", "Twilight", "Eclipse", "Solstice", "Equinox", "Season", "Spring", "Summer", "Autumn", "Winter", "Year", "Decade", "Century", "Millennium",
   "Rose", "Lily", "Tulip", "Orchid", "Daisy", "Sunflower", "Marigold", "Pansy", "Violet", "Iris", "Lilac", "Peony", "Daffodil", "Hyacinth", "Crocus", "Snowdrop", "Bluebell", "Foxglove", "Snapdragon", "Hollyhock",
-  "Apple", "Orange", "Banana", "Grape", "Melon", "Watermelon", "Lemon", "Lime", "Cherry", "Peach", "Plum", "Apricot", "Nectarine", "Mango", "Papaya", "Pineapple", "Coconut", "Kiwi", "Strawberry", "Raspberry",
-  "Fierce", "Slay", "Werk", "Huntress", "Diva", "Queen", "Empress", "Goddess", "Idol", "Icon", "Legend", "Starlet", "Vamp", "Siren", "Muse", "Nymph", "Fairy", "Sprite", "Pixie", "Goblin"
+  "Apple", "Orange", "Banana", "Grape", "Melon", "Watermelon", "Lemon", "Lime", "Cherry", "Peach", "Apricot", "Nectarine", "Mango", "Papaya", "Pineapple", "Coconut", "Kiwi", "Strawberry", "Raspberry",
+
+  // --- The "House of" Dynasties (Classic Drag Surnames) ---
+  "Davenport", "O'Hara", "Edwards", "St. James", "Michaels", "Royale", "Belle", "Dupree", "Iman", "Hall", "Brooks", "Brown", "Montrese", "Bonina", "Zamolodchikova", "Lux", "Lahar", "Dazzle", "Divine", "Jolie",
+  "Excellence", "Grand", "Majesty", "Supreme", "Dynasty", "Luxe", "Couture", "Prestige", "Regent", "Sterling", "Rich", "Billion", "Posh", "Vogue", "Runway", "Highness", "Empress", "Goddess",
+
+  // --- Camp, Kitchen & Comedy ---
+  "Casserole", "Strudel", "Pancake", "Gravy", "Sauce", "Sizzle", "Flambé", "Shortcake", "Meringue", "Biscuit", "Buffet", "Leftovers", "Cheesecake", "Crumble", "Toffee", "Muffin", "Pickle", "Tart", "Pie", "Crust",
+  "Moore", "Plenty", "Side", "Back", "Front", "Bottoms", "Top", "Always", "Never", "Often", "Daily", "Weekly", "Monthly", "Yearly", "Fast", "Slow", "Hard", "Softly", "Rough", "Ready",
+
+  // --- Industrial, Tech & Edgy ---
+  "Static", "Radar", "Signal", "Voltage", "Laser", "Neon", "Chrome", "Matrix", "Cyber", "Sonic", "Atomic", "Binary", "Vector", "Circuit", "Harddrive", "Silicon", "Carbon", "Steel", "Iron", "Titanium",
+  "Danger", "Hazard", "Warning", "Chaos", "Riot", "Vandal", "Felony", "Arson", "Malice", "Vex", "Hex", "Grave", "Dagger", "Blade", "Razor", "Venom", "Poison", "Sin", "Vice", "Wicked",
+
+  // --- Titles & Power ---
+  "Fierce", "Slay", "Werk", "Huntress", "Diva", "Queen", "Idol", "Icon", "Legend", "Starlet", "Vamp", "Siren", "Muse", "Nymph", "Fairy", "Sprite", "Pixie", "Goblin", "Witch", "Sorceress",
+  "Oracle", "Prophet", "Judge", "Jury", "Executioner", "General", "Captain", "Major", "Admiral", "Private", "Saint", "Sinner", "Bishop", "Knight", "Rook", "Pawn", "Checkmate",
+
+  // --- Textures & Materials ---
+  "Lace", "Silk", "Satin", "Leather", "Denim", "Spandex", "Sequins", "Beads", "Feathers", "Fringe", "Plastic", "Latex", "Rubber", "Chains", "Gold", "Silver", "Platinum", "Diamond", "Pearl", "Crystal",
+  "Marble", "Granite", "Stone", "Brick", "Concrete", "Glass", "Mirror", "Reflections", "Shimmer", "Glitz", "Grit", "Dirt", "Dust", "Ash", "Sand", "Salt", "Sugar", "Spice"
 ];
 
 export const ARCHETYPES = [
