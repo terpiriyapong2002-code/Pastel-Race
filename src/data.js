@@ -62,7 +62,13 @@ export const CHALLENGES = [
     { id: 'hair_show', name: "Avant-Garde Hair Show", type: 'solo', minCast: 1, weights: { design: 0.8, runway: 0.6, sewing: 0.3 }, desc: "Create gravity-defying, structural hairpieces that tell an emotional story." },
     { id: 'courtroom', name: "Fairy Tale Courtroom", type: 'team', minCast: 6, weights: { improv: 0.8, acting_comedy: 0.6, nerve: 0.4 }, desc: "Defend or prosecute famous villains in a televised court session." },
     { id: 'restaurant', name: "Pop-Up Restaurant", type: 'team', minCast: 6, weights: { branding: 0.7, performance: 0.5, improv: 0.4 }, desc: "Design a bizarre themed dining experience and serve the judges." },
-    { id: 'lipsync_tournament', name: "The Lip Sync Extravaganza", type: 'solo', minCast: 1, weights: { lip_sync: 0.9, performance: 0.6, nerve: 0.8 }, desc: "Endure a grueling, multi-round lip sync tournament." }
+    { id: 'lipsync_tournament', name: "The Lip Sync Extravaganza", type: 'solo', minCast: 1, weights: { lip_sync: 0.9, performance: 0.6, nerve: 0.8 }, desc: "Endure a grueling, multi-round lip sync tournament." },
+    { id: 'return_slay_off', name: "The Slay-Off Smackdown", type: 'solo', minCast: 6, weights: { lip_sync: 0.8, performance: 0.5, nerve: 0.5 }, desc: "Eliminated queens face off in a lip-sync tournament. The last one standing returns." },
+    { id: 'return_makeover', name: "Makeover Redemption", type: 'duo', minCast: 4, weights: { design: 0.4, sewing: 0.3, branding: 0.3, performance: 0.2 }, desc: "Eliminated queens are paired with current contestants for a makeover. Win, and you're back in." },
+    { id: 'return_rusical', name: "The Ghost of Drag Race Past", type: 'team', minCast: 5, weights: { performance: 0.5, acting_comedy: 0.3, lip_sync: 0.2 }, desc: "A spooky rusical spectacular starring the eliminated queens. Steal the show to return." },
+    { id: 'return_talent_show', name: "The Return Talent Show", type: 'solo', minCast: 4, weights: { performance: 0.6, branding: 0.4, nerve: 0.3 }, desc: "A talent show for the fallen queens. Show us what we've been missing." },
+    { id: 'return_conjoined', name: "Conjoined Twins Redemption", type: 'duo', minCast: 4, weights: { sewing: 0.5, design: 0.4, acting_comedy: 0.2, runway: 0.2 }, desc: "Paired with a remaining queen, create a conjoined look. The winning eliminated queen returns." },
+
 ];
 
 export const DRAMA_TEMPLATES = [

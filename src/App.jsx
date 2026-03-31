@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sparkles, Trophy, Heart, Trash2, Play, ChevronRight, Crown, Music, PenTool, Star, Save, FolderOpen, ArrowLeft, RefreshCw, Dice5, Library, Users, Medal } from 'lucide-react';
+import { Sparkles, Trophy, Heart, Trash2, Play, ChevronRight, Crown, Music, Plus, PenTool, Star, Save, FolderOpen, ArrowLeft, RefreshCw, Dice5, Library, Users, Medal } from 'lucide-react';
 import { FIRST_NAMES, LAST_NAMES, ARCHETYPES, CHALLENGES, DRAMA_TEMPLATES } from './data';
 
 const getPPEValue = (placement) => {
@@ -126,6 +126,8 @@ const App = () => {
     const [disqualifiedQueen, setDisqualifiedQueen] = useState(null);
     const [challengeHistory, setChallengeHistory] = useState([]);
     const [riggingIntensity, setRiggingIntensity] = useState('OFF'); // OFF, LOW, MED, HIGH
+    const [juryVotes, setJuryVotes] = useState(null); // { jurorId: finalistId, ... }
+    const [selectableChallenges, setSelectableChallenges] = useState([]);
 
     // Persistent State for Custom Queens
     const [customQueens, setCustomQueens] = useState(() => {
@@ -199,7 +201,7 @@ const App = () => {
         const ln = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
         const arch = ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
         return {
-            id: Math.random().toString(36).substr(2, 9),
+            id: `queen-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             name: `${fn} ${ln}`,
             archetype: arch.name,
             icon: arch.icon,
@@ -442,23 +444,41 @@ const App = () => {
         initWeek();
     };
 
-    const startReturnChallenge = () => {
-        setWeek(week + 1);
-        const challenge = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
-        const challengeName = 'The Return: ' + challenge.name;
-        const eliminated = queens.filter(q => q.eliminated);
-        const groups = generateGroups(eliminated, challenge.type);
+const startReturnChallenge = () => {
+    setHasReturnChallengeHappened(true);
+    const eliminated = queens.filter(q => q.eliminated && !q.trackRecord.includes('GUEST'));
+    const available = CHALLENGES.filter(c => {
+        const isReturn = c.id.startsWith('return_');
+        // Check that it's a return challenge, the cast is big enough, and it hasn't been played
+        return isReturn && eliminated.length >= c.minCast && !challengeHistory.includes(c.id);
+    });
 
-        setCurrentChallenge({ ...challenge, name: challengeName, desc: 'Eliminated queens, this is your chance to return to the competition! ' + challenge.desc });
-        setChallengeHistory(prev => [...prev, challengeName]);
-        setCurrentGroups(groups);
-        setIsReturnEpisode(true);
-        setGameState('ANNOUNCE');
-        setWeekResults(null);
-        setSashayedQueen(null);
-        setWeeklyWinner(null);
-        setBottomTwo([]);
-    };
+    if (available.length > 0) {
+        setSelectableChallenges(available);
+        setGameState('CHOOSE_RETURN_CHALLENGE');
+    } else {
+        alert('There are no available return challenges that meet the criteria or they have all been used.');
+        setHasReturnChallengeHappened(false);
+    }
+};
+
+const selectReturnChallenge = (challenge) => {
+    setWeek(week + 1);
+    const challengeName = 'The Return: ' + challenge.name;
+    const eliminated = queens.filter(q => q.eliminated && !q.trackRecord.includes('GUEST'));
+    const groups = generateGroups(eliminated, challenge.type);
+
+    setCurrentChallenge({ ...challenge, name: challengeName, desc: 'Eliminated queens, this is your chance to return to the competition! ' + challenge.desc });
+    // We will now store the challenge ID instead of the name
+    setChallengeHistory(prev => [...prev, challenge.id]);
+    setCurrentGroups(groups);
+    setIsReturnEpisode(true);
+    setGameState('ANNOUNCE');
+    setWeekResults(null);
+    setSashayedQueen(null);
+    setWeeklyWinner(null);
+    setBottomTwo([]);
+};
     const initWeek = () => {
         const remaining = queens.filter(q => !q.eliminated);
         
@@ -503,37 +523,52 @@ const App = () => {
                 setGameState('FINALE_SUDDEN_DEATH');
                 setBottomTwo(remaining.slice(0, 3)); // Using bottomTwo to hold the three finalists
             } else if (finaleFormat === 'JURY_OF_PEERS') {
-                // Placeholder: This format would require new UI for voting.
-                // For now, it will act like a Top 3 challenge finale
-                setGameState('FINALE_TOP3_CHALLENGE');
+                setGameState('FINALE_JURY_VOTE');
+                setBottomTwo(remaining.slice(0, 3)); // Use bottomTwo to hold the three finalists
+                setJuryVotes(null); // Reset votes
             }
-            
             return;
         }
 
         triggerWorkroomDrama();
     };
 
-    const confirmDrama = () => {
-        const remaining = queens.filter(q => !q.eliminated);
-        const availableChallenges = CHALLENGES.filter(c => {
-            if (remaining.length < c.minCast) return false;
-            return true;
-        });
+const confirmDrama = () => {
+    const remaining = queens.filter(q => !q.eliminated);
+    const availableChallenges = CHALLENGES.filter(c => {
+        if (remaining.length < c.minCast) return false;
+        // Don't show return challenges in the normal rotation
+        if (c.id.startsWith('return_')) return false;
+        // Don't show challenges that have already been played this season
+        return !challengeHistory.includes(c.id);
+    });
 
-        const challenge = availableChallenges[Math.floor(Math.random() * availableChallenges.length)];
-        const groups = generateGroups(remaining, challenge.type);
-        
+    // Fallback in case all challenges have been used
+    if (availableChallenges.length === 0) {
+        alert("You've run out of unique challenges for this cast size!");
+        // As a fallback, we'll just reuse a random challenge
+        const allChallenges = CHALLENGES.filter(c => !c.id.startsWith('return_') && remaining.length >= c.minCast);
+        const challenge = allChallenges[Math.floor(Math.random() * allChallenges.length)];
         setCurrentChallenge(challenge);
-        setChallengeHistory(prev => [...prev, challenge.name]);
-        setCurrentGroups(groups);
+        setChallengeHistory(prev => [...prev, challenge.id]);
         setGameState('ANNOUNCE');
-        setWeekResults(null);
-        setSashayedQueen(null);
-        setWeeklyWinner(null);
-        setBottomTwo([]);
-        setDisqualifiedQueen(null);
-    };
+        return;
+    }
+
+    const challenge = availableChallenges[Math.floor(Math.random() * availableChallenges.length)];
+    const groups = generateGroups(remaining, challenge.type);
+    
+    setCurrentChallenge(challenge);
+    // We will now store the challenge ID instead of the name for more reliable tracking
+    setChallengeHistory(prev => [...prev, challenge.id]); 
+    setCurrentGroups(groups);
+    setGameState('ANNOUNCE');
+    setWeekResults(null);
+    setSashayedQueen(null);
+    setWeeklyWinner(null);
+    setBottomTwo([]);
+    setDisqualifiedQueen(null);
+};
 
     const runPerformances = () => {
         const competitors = isReturnEpisode ? queens.filter(q => q.eliminated) : queens.filter(q => !q.eliminated);
@@ -1052,7 +1087,64 @@ const runFinaleSuddenDeath = () => {
     setTimeout(() => setView('winner'), 1500);
 };
 
+const runJuryVoteAndCrown = () => {
+    const finalists = bottomTwo; // The Top 3
+    const jurors = queens.filter(q => q.eliminated);
 
+    if (jurors.length === 0) { // Safety check if there are no eliminated queens
+        runFinaleTop3(); // Fallback to a standard Top 3 finale
+        return;
+    }
+
+    // Simulate each juror's vote
+    const votes = {};
+    jurors.forEach(juror => {
+        const scores = finalists.map(finalist => {
+            const relKey = getRelKey(juror.id, finalist.id);
+            const relScore = relationships[relKey] || 0; // -100 to 100
+            const ppe = Number(calculatePPE(finalist.trackRecord)); // 0 to 5
+            
+            // Vote is influenced by relationship, finalist's performance, and some randomness
+            return {
+                finalistId: finalist.id,
+                score: (relScore * 0.5) + (ppe * 10) + (Math.random() * 15)
+            };
+        }).sort((a, b) => b.score - a.score);
+
+        votes[juror.id] = scores[0].finalistId;
+    });
+
+    setJuryVotes(votes);
+
+    // Tally the votes
+    const voteCounts = finalists.map(f => ({
+        queen: f,
+        count: Object.values(votes).filter(vote => vote === f.id).length
+    })).sort((a, b) => b.count - a.count);
+    
+    let winner = voteCounts[0].queen;
+    
+    // Handle ties: The queen with the higher PPE wins the tie.
+    if (voteCounts.length > 1 && voteCounts[0].count === voteCounts[1].count) {
+         const ppe1 = Number(calculatePPE(voteCounts[0].queen.trackRecord));
+         const ppe2 = Number(calculatePPE(voteCounts[1].queen.trackRecord));
+         if (ppe2 > ppe1) {
+             winner = voteCounts[1].queen;
+         }
+    }
+    
+    // Set final placements
+    setQueens(prev => prev.map(q => {
+        if (q.id === winner.id) return { ...q, trackRecord: [...q.trackRecord, 'WIN'] };
+        if (finalists.some(f => f.id === q.id && q.id !== winner.id)) {
+            return { ...q, eliminated: true, trackRecord: [...q.trackRecord, 'RUNNER UP'] };
+        }
+        return q;
+    }));
+
+    calculateMissCongeniality();
+    setGameState('FINALE_JURY_RESULT');
+};
     const randomizeLsftcPairs = () => {
         const remaining = queens.filter(q => !q.eliminated);
         const shuffled = [...remaining].sort(() => 0.5 - Math.random());
@@ -1243,7 +1335,8 @@ const runFinaleSuddenDeath = () => {
             winner: sortedQueensArchiveOrder[0],
             missCongeniality,
             seasonFormat,
-            cast: sortedQueensArchiveOrder
+            cast: sortedQueensArchiveOrder,
+            challengeHistory: challengeHistory
         };
 
         setArchivedSeasons(prev => [record, ...prev]);
@@ -1792,9 +1885,15 @@ const runFinaleSuddenDeath = () => {
                                                 <thead>
                                                     <tr className="bg-slate-100 border-b border-slate-200">
                                                         <th className="p-1.5 sm:p-2.5 text-left font-black text-slate-700 uppercase tracking-wider min-w-[70px] sm:min-w-[130px] text-[9px] sm:text-xs">Queen</th>
-                                                        {Array.from({ length: Math.max(...record.cast.map(q => q.trackRecord.length)) }).map((_, i) => (
-                                                            <th key={i} className="p-1 sm:p-2 font-bold text-slate-500 w-6 sm:w-12 text-[8px] sm:text-xs">{i + 1}</th>
-                                                        ))}
+                                                            {Array.from({ length: Math.max(...record.cast.map(q => q.trackRecord.length)) }).map((_, i) => {
+                                                                const challengeName = (record.challengeHistory && record.challengeHistory[i]) || '';
+                                                                return (
+                                                                    <th key={i} className="p-1 sm:p-2 font-bold text-slate-500 w-24" title={`${i + 1}: ${challengeName}`}>
+                                                                        <div className="font-black text-[8px] sm:text-xs">{i + 1}</div>
+                                                                        <div className="font-medium uppercase tracking-tighter text-[7px] sm:text-[9px] truncate" style={{maxWidth: '80px'}}>{challengeName}</div>
+                                                                    </th>
+                                                                );
+                                                            })}
                                                         <th className="p-1 sm:p-2 font-black text-slate-700 uppercase tracking-wider text-[8px] sm:text-xs hidden sm:table-cell">Place</th>
                                                         <th className="p-1 sm:p-2 font-black text-slate-700 uppercase tracking-wider text-[8px] sm:text-xs">PPE</th>
                                                     </tr>
@@ -2175,6 +2274,26 @@ const runFinaleSuddenDeath = () => {
                                             </div>
                                         </div>
                                     )}
+                                    {gameState === 'CHOOSE_RETURN_CHALLENGE' && (
+                                        <div className="text-center p-8 animate-in fade-in zoom-in duration-500">
+                                            <div className="text-6xl mb-6">👑</div>
+                                            <h3 className="text-3xl font-black text-slate-800 mb-4">Choose a Return Challenge</h3>
+                                            <p className="text-lg font-medium text-slate-600 mb-6">Which challenge will give one queen a second chance?</p>
+                                            <div className="space-y-4 max-w-lg mx-auto">
+                                                {selectableChallenges.map(challenge => (
+                                                    <button
+                                                        key={challenge.id}
+                                                        onClick={() => selectReturnChallenge(challenge)}
+                                                        className="w-full text-left bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-pink-200 transition-all duration-300"
+                                                    >
+                                                        <h4 className="font-bold text-pink-500">{challenge.name}</h4>
+                                                        <p className="text-sm text-slate-600">{challenge.desc}</p>
+                                                        <p className="text-xs text-slate-400 mt-2">Requires at least {challenge.minCast} eliminated queens.</p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {gameState === 'RETURN_WINNER' && weeklyWinner && (
                                         <div className="text-center p-8 animate-in zoom-in duration-500">
@@ -2192,11 +2311,62 @@ const runFinaleSuddenDeath = () => {
 
                                     {/* Finales logic preserves the UI block but waits for actions */}
                                     {gameState.startsWith('FINALE') && (
-                                        <div className="text-center p-8 animate-in fade-in">
-                                            <div className="text-6xl mb-6 animate-pulse">👑</div>
-                                            <h3 className="text-3xl font-black text-yellow-500 mb-4">THE GRAND FINALE!</h3>
-                                            <p className="text-slate-500 font-medium">The time has come to crown our superstar.</p>
-                                        </div>
+                                        <>
+                                            {gameState === 'FINALE_JURY_VOTE' && (
+                                                <div className="text-center p-8 animate-in fade-in zoom-in duration-500">
+                                                    <div className="text-6xl mb-6">🗳️</div>
+                                                    <h3 className="text-3xl font-black text-slate-800 mb-4">Jury of Peers</h3>
+                                                    <p className="text-lg font-medium text-slate-600 mb-6">The eliminated queens will now vote for a winner.</p>
+                                                    <div className="flex justify-center gap-4 mb-8">
+                                                        {bottomTwo.map(q => (
+                                                            <div key={q.id} className="text-center">
+                                                                <span className="text-5xl block">{q.icon}</span>
+                                                                <p className="font-bold text-sm mt-2">{q.name}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {gameState === 'FINALE_JURY_RESULT' && juryVotes && (
+                                                <div className="p-4 sm:p-8 animate-in fade-in duration-500">
+                                                    <h3 className="text-xl font-black text-center text-purple-500 mb-6">The Jury Has Spoken!</h3>
+                                                    <div className="space-y-3 max-w-lg mx-auto">
+                                                        {Object.entries(juryVotes).map(([jurorId, finalistId]) => {
+                                                            const juror = queens.find(q => q.id === jurorId);
+                                                            const votedFor = queens.find(q => q.id === finalistId);
+                                                            if (!juror || !votedFor) return null;
+                                                            return (
+                                                                <div key={jurorId} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between shadow-sm animate-in slide-in-from-left-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xl">{juror.icon}</span>
+                                                                        <p className="text-sm font-bold text-slate-600">{juror.name}</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-xs font-bold text-purple-500">Voted for</p>
+                                                                        <span className="text-xl">{votedFor.icon}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <div className="text-center mt-8">
+                                                        <button onClick={() => setTimeout(() => setView('winner'), 500)} className="bg-yellow-400 text-yellow-900 py-3 px-8 rounded-xl font-black text-lg hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-100 mx-auto">
+                                                        <Crown size={20} /> Reveal the Winner!
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Fallback for other finales */}
+                                            {!['FINALE_JURY_VOTE', 'FINALE_JURY_RESULT'].includes(gameState) && (
+                                                <div className="text-center p-8 animate-in fade-in">
+                                                    <div className="text-6xl mb-6 animate-pulse">👑</div>
+                                                    <h3 className="text-3xl font-black text-yellow-500 mb-4">THE GRAND FINALE!</h3>
+                                                    <p className="text-slate-500 font-medium">The time has come to crown our superstar.</p>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
 
                                     {gameState === 'TRACK_RECORD' && (
@@ -2423,7 +2593,7 @@ const runFinaleSuddenDeath = () => {
                                                 Start Next Episode <ChevronRight size={20} />
                                             </button>
                                             {!hasReturnChallengeHappened && queens.filter(q => q.eliminated && !q.trackRecord.includes('GUEST')).length >= 4 && remainingQueens.length >= 4 && (
-                                                <button onClick={() => { setHasReturnChallengeHappened(true); startReturnChallenge(); }} className="w-full bg-emerald-400 text-white py-4 rounded-2xl font-black text-lg hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 mt-3">
+                                                <button onClick={startReturnChallenge} className="w-full bg-emerald-400 text-white py-4 rounded-2xl font-black text-lg hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 mt-3">
                                                     <Sparkles size={20} /> Trigger Return Challenge 
                                                 </button>
                                             )}
@@ -2452,7 +2622,21 @@ const runFinaleSuddenDeath = () => {
                                             <Crown size={20} /> Sudden Death Lip Sync For The Crown!
                                         </button>
                                     )}
-
+                                    {gameState === 'FINALE_JURY_VOTE' && (
+                                        <button onClick={runJuryVoteAndCrown} className="w-full bg-purple-500 text-white py-4 rounded-2xl font-black text-lg hover:bg-purple-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-200">
+                                            <Users size={20} /> Cast the Votes!
+                                        </button>
+                                    )}
+                                        {gameState === 'FINALE_GAUNTLET_SETUP' && (
+                                            <button onClick={() => setGameState('FINALE_GAUNTLET_LIPSYNC')} className="w-full bg-pink-500 text-white py-4 rounded-2xl font-black text-lg hover:bg-pink-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-200">
+                                                <Play size={20} /> Begin Round 1
+                                            </button>
+                                        )}
+                                        {gameState === 'FINALE_GAUNTLET_LIPSYNC' && (
+                                            <button onClick={runGauntletLipSync} className="w-full bg-cyan-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-cyan-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-200">
+                                                <Music size={20} /> Lip Sync! ({gauntletRound === 1 ? '#4 vs #3' : gauntletRound === 2 ? 'Winner vs #2' : 'Final Round'})
+                                            </button>
+                                        )}
                                     {/* LSFTC Buttons */}
                                     {gameState === 'FINALE_LSFTC_SETUP' && (
                                         <div className="space-y-3">
