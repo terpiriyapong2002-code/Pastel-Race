@@ -466,6 +466,9 @@ const App = () => {
         if (finaleFormat === 'TOP_2') threshold = 2;
         if (finaleFormat === 'TOP_3') threshold = 3;
         if (finaleFormat === 'TOP_4_LSFTC') threshold = 4;
+        if (['TOP_4_RACE', 'LIP_SYNC_GAUNTLET'].includes(finaleFormat)) threshold = 4;
+        if (['SUDDEN_DEATH_LIP_SYNC', 'JURY_OF_PEERS'].includes(finaleFormat)) threshold = 3;
+
 
         if (remaining.length === 1) {
             setView('winner');
@@ -487,7 +490,24 @@ const App = () => {
                 const shuffled = [...remaining].sort(() => 0.5 - Math.random());
                 setLsftcPairs([[shuffled[0], shuffled[1]], [shuffled[2], shuffled[3]]]);
                 setLsftcWinners([]);
+            } else if (finaleFormat === 'TOP_4_RACE') {
+                setGameState('FINALE_TOP4_CHALLENGE');
+            } else if (finaleFormat === 'LIP_SYNC_GAUNTLET') {
+                // Placeholder: This is a complex format that would require new UI and state for seeding
+                // For now, it will act like a Top 4 smackdown
+                setGameState('FINALE_LSFTC_SETUP');
+                const shuffled = [...remaining].sort(() => 0.5 - Math.random());
+                setLsftcPairs([[shuffled[0], shuffled[1]], [shuffled[2], shuffled[3]]]);
+                setLsftcWinners([]);
+            } else if (finaleFormat === 'SUDDEN_DEATH_LIP_SYNC') {
+                setGameState('FINALE_SUDDEN_DEATH');
+                setBottomTwo(remaining.slice(0, 3)); // Using bottomTwo to hold the three finalists
+            } else if (finaleFormat === 'JURY_OF_PEERS') {
+                // Placeholder: This format would require new UI for voting.
+                // For now, it will act like a Top 3 challenge finale
+                setGameState('FINALE_TOP3_CHALLENGE');
             }
+            
             return;
         }
 
@@ -988,6 +1008,51 @@ const App = () => {
         setTimeout(() => setView('winner'), 1500);
     };
 
+const runFinaleTop4 = () => {
+    const remaining = queens.filter(q => !q.eliminated);
+    const results = remaining.map(q => {
+        const ppe = Number(calculatePPE(q.trackRecord));
+        let score = (q.stats.performance * 0.4) + (q.stats.branding * 0.3) + (q.stats.runway * 0.3) + (ppe * 5) + (Math.random() * 20);
+        return { queen: q, score };
+    }).sort((a, b) => b.score - a.score);
+
+    const winner = results[0].queen;
+    
+    setQueens(prev => prev.map(q => {
+        if (q.id === winner.id) return { ...q, trackRecord: [...q.trackRecord, 'WIN'] };
+        if (!q.eliminated) return { ...q, eliminated: true, trackRecord: [...q.trackRecord, 'RUNNER UP'] };
+        return q;
+    }));
+
+    calculateMissCongeniality();
+    setTimeout(() => setView('winner'), 1500);
+};
+
+const runFinaleSuddenDeath = () => {
+    const [q1, q2, q3] = bottomTwo;
+    const finalists = [q1, q2, q3];
+
+    const results = finalists.map(q => {
+        const ppe = Number(calculatePPE(q.trackRecord));
+        const score = (q.stats.lip_sync * 0.6) + (q.stats.nerve * 0.4) + (ppe * 5) + (Math.random() * 30);
+        return { queen: q, score };
+    }).sort((a, b) => b.score - a.score);
+
+    const winner = results[0].queen;
+
+    setQueens(prev => prev.map(q => {
+        if (q.id === winner.id) return { ...q, trackRecord: [...q.trackRecord, 'WIN'] };
+        if (finalists.some(f => f.id === q.id) && q.id !== winner.id) {
+            return { ...q, eliminated: true, trackRecord: [...q.trackRecord, 'RUNNER UP'] };
+        }
+        return q;
+    }));
+
+    calculateMissCongeniality();
+    setTimeout(() => setView('winner'), 1500);
+};
+
+
     const randomizeLsftcPairs = () => {
         const remaining = queens.filter(q => !q.eliminated);
         const shuffled = [...remaining].sort(() => 0.5 - Math.random());
@@ -1234,6 +1299,10 @@ const App = () => {
                                         <option value="TOP_2">Top 2 Finale</option>
                                         <option value="TOP_3">Top 3 Grand Finale</option>
                                         <option value="TOP_4_LSFTC">Top 4 Smackdown</option>
+                                        <option value="TOP_4_RACE">Top 4 Race</option>
+                                        <option value="LIP_SYNC_GAUNTLET">Lip Sync Gauntlet</option>
+                                        <option value="SUDDEN_DEATH_LIP_SYNC">Top 3 Sudden Death</option>
+                                        <option value="JURY_OF_PEERS">Jury of Peers</option>
                                     </select>
                                     <select 
                                         value={seasonFormat} 
@@ -2370,6 +2439,17 @@ const App = () => {
                                     {gameState === 'FINALE_TOP3_CHALLENGE' && (
                                         <button onClick={runFinaleTop3} className="w-full bg-yellow-400 text-yellow-900 py-4 rounded-2xl font-black text-lg hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-100">
                                             <Crown size={20} /> Perform Top 3 Grand Finale!
+                                        </button>
+                                    )}
+
+                                    {gameState === 'FINALE_TOP4_CHALLENGE' && (
+                                        <button onClick={runFinaleTop4} className="w-full bg-yellow-400 text-yellow-900 py-4 rounded-2xl font-black text-lg hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-100">
+                                            <Crown size={20} /> Perform Top 4 Grand Finale!
+                                        </button>
+                                    )}
+                                    {gameState === 'FINALE_SUDDEN_DEATH' && (
+                                        <button onClick={runFinaleSuddenDeath} className="w-full bg-yellow-400 text-yellow-900 py-4 rounded-2xl font-black text-lg hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-100">
+                                            <Crown size={20} /> Sudden Death Lip Sync For The Crown!
                                         </button>
                                     )}
 
